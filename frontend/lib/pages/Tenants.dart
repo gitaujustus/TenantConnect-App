@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:tenantconnect/userprovider.dart';
 
 class Tenants extends StatefulWidget {
   const Tenants({super.key});
@@ -24,68 +29,59 @@ class HouseData {
 }
 
 class _TenantsState extends State<Tenants> {
-List<HouseData> houseList = [
-  HouseData(
-    name: "Comeronnn becky",
-    description: "Use a Wrap widget instead of a Row widget, which will automatically wrap its children to the next line if there is not enough space.",
-    location: "Chemundu",
-    price: "34 dollars",
-    contact: "0729144533",
-  ),
-  HouseData(
-    name: "John Doe",
-    description: "Another house description goes here.",
-    location: "City Center",
-    price: "50 dollars",
-    contact: "0123456789",
-  ),
-  HouseData(
-    name: "John Doe",
-    description: "Another house description goes here.",
-    location: "City Center",
-    price: "50 dollars",
-    contact: "0123456789",
-  ),
-  HouseData(
-    name: "John Doe",
-    description: "Another house description goes here.",
-    location: "City Center",
-    price: "50 dollars",
-    contact: "0123456789",
-  ),
-  HouseData(
-    name: "John Doe",
-    description: "Another house description goes here.",
-    location: "City Center",
-    price: "50 dollars",
-    contact: "0123456789",
-  ),
-  HouseData(
-    name: "John Doe",
-    description: "Another house description goes here.",
-    location: "City Center",
-    price: "50 dollars",
-    contact: "0123456789",
-  ),
-  HouseData(
-    name: "John Doe",
-    description: "Another house description goes here.",
-    location: "City Center",
-    price: "50 dollars",
-    contact: "0123456789",
-  ),
-  HouseData(
-    name: "John Doe",
-    description: "Another house description goes here.",
-    location: "City Center",
-    price: "50 dollars",
-    contact: "0123456789",
-  ),
-  // Add more house data as needed
-];
+  List<HouseData> houseList = [
+    // HouseData(
+    //   name: "Comeronnn becky",
+    //   description:
+    //       "Use a Wrap widget instead of a Row widget, which will automatically wrap its children to the next line if there is not enough space.",
+    //   location: "Chemundu",
+    //   price: "34 dollars",
+    //   contact: "0729144533",
+    // ),
+    // // Add more house data as needed
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Call a function to fetch data when the widget is first created
+    fetchData();
+  }
+
+  Future<void> fetchData() async {
+    final String getData = 'http://localhost:8000/api/getproperties';
+    try {
+      final response = await http.get(Uri.parse(getData));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data["success"] == true) {
+          final List<dynamic> properties = data['properties'];
+          final List<HouseData> fetchedHouses = properties.map((property) {
+            return HouseData(
+              name: property['propertyName'],
+              description: property['description'],
+              location: property['location'],
+              price: property['price'],
+              contact: property['contact'],
+            );
+          }).toList();
+          setState(() {
+            houseList = fetchedHouses;
+          });
+        } else {
+          print('Failed to fetch houses. Status code: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    String? username =
+        Provider.of<UserProvider>(context, listen: false).userName;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -108,7 +104,13 @@ List<HouseData> houseList = [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text("Hi", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),),
+                        Text(
+                          "Hi",
+                          style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
                         Icon(
                           Icons.waving_hand,
                           color: const Color.fromARGB(255, 255, 195, 16),
@@ -116,10 +118,26 @@ List<HouseData> houseList = [
                         ),
                       ],
                     ),
-                    SizedBox(height: 15,),
-                    Text("User", style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold),),
-                      SizedBox(height: 40,),
-                    Text("Welcome, Get Accomodation!", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),)
+                    SizedBox(
+                      height: 15,
+                    ),
+                    Text(
+                      "${username}",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(
+                      height: 40,
+                    ),
+                    Text(
+                      "Welcome, Get Accomodation!",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    )
                   ],
                 ),
               ),
@@ -174,9 +192,18 @@ class HouseCard extends StatelessWidget {
                           fontSize: 15.0,
                         ),
                       ),
-                      Text("LOCATION: ${houseList[index].location}", style: TextStyle(fontWeight: FontWeight.bold),),
-                      Text("PRICE: ${houseList[index].price}" , style: TextStyle(fontWeight: FontWeight.bold),),
-                      Text("CONTACTS: ${houseList[index].contact}" , style: TextStyle(fontWeight: FontWeight.bold),),
+                      Text(
+                        "LOCATION: ${houseList[index].location}",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "PRICE: ${houseList[index].price}",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "CONTACTS: ${houseList[index].contact}",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),

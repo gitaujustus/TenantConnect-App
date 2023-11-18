@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tenantconnect/pages/Tenants.dart';
+import 'package:http/http.dart' as http;
+import 'package:tenantconnect/userprovider.dart';
 
 class Landlord extends StatefulWidget {
   const Landlord({super.key});
@@ -26,6 +32,24 @@ class HouseData {
 
 // List<String> properties = [];
 
+List<HouseData> yourProperties = [
+  // HouseData(
+  //   name: "eronnn beckyy",
+  //   description:
+  //       "Use a Wrap widget instead of a Row widget, which will automatically wrap its children to the next line if there is not enough space.",
+  //   location: "Chemundu",
+  //   price: "34 dollars",
+  //   contact: "0729144533",
+  // ),
+  // HouseData(
+  //   name: "John Doe",
+  //   description: "Another house description goes here.",
+  //   location: "City Center",
+  //   price: "50 dollars",
+  //   contact: "0123456789",
+  // ),
+];
+
 class addProperty {
   String propertyName = "";
   String propertyPrice = "";
@@ -36,26 +60,59 @@ class addProperty {
 
 class _LandlordState extends State<Landlord> {
   final addProperty addproperty = new addProperty();
+
+  @override
+  void initState() {
+    super.initState();
+    // Call a function to fetch data when the widget is first created
+    fetchData();
+  }
+
+  Future<void> fetchData() async {
+    final int? userId =
+        Provider.of<UserProvider>(context, listen: false).userId;
+    print(userId);
+    // print(userId);
+    // if (userId == null) {
+    //   print("No User");
+    //   // Handle not authenticated scenario, maybe redirect to login or show a message
+    //   return;
+    // }
+
+    final String getData =
+        'http://localhost:8000/api/getPropertiesbyId/${userId}';
+    try {
+      final response = await http.get(Uri.parse(getData));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data["success"] == true) {
+          final List<dynamic> properties = data['properties'];
+          final List<HouseData> fetchedHouses = properties.map((property) {
+            return HouseData(
+              name: property['propertyName'],
+              description: property['description'],
+              location: property['location'],
+              price: property['price'],
+              contact: property['contact'],
+            );
+          }).toList();
+          setState(() {
+            yourProperties = fetchedHouses;
+          });
+        } else {
+          print('Failed to fetch houses. Status code: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-
-    List<HouseData> yourProperties = [
-      HouseData(
-        name: "Comeronnn becky",
-        description:
-            "Use a Wrap widget instead of a Row widget, which will automatically wrap its children to the next line if there is not enough space.",
-        location: "Chemundu",
-        price: "34 dollars",
-        contact: "0729144533",
-      ),
-      HouseData(
-        name: "John Doe",
-        description: "Another house description goes here.",
-        location: "City Center",
-        price: "50 dollars",
-        contact: "0123456789",
-      ),
-    ];
+    String? username =
+        Provider.of<UserProvider>(context, listen: false).userName;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -105,7 +162,7 @@ class _LandlordState extends State<Landlord> {
                   // ),
                   SizedBox(height: 10),
                   Text(
-                    "Welcome, Landlord!",
+                    "Welcome, $username!",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 25,
@@ -189,7 +246,7 @@ class _LandlordState extends State<Landlord> {
                         addproperty.yourContacts = value;
                       },
                       decoration: InputDecoration(
-                          labelText: "Your Contactss",
+                          labelText: "Your Contact",
                           border: OutlineInputBorder(),
                           fillColor: Colors.white,
                           filled: true,
@@ -199,12 +256,50 @@ class _LandlordState extends State<Landlord> {
                       height: 10,
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        print("PropertName: " + addproperty.propertyName);
-                        print("propertyDescription: " +
-                            addproperty.propertyDescription);
-                        print("propertyLocation: " +
-                            addproperty.propertyLocation);
+                      onPressed: () async {
+                        final String property =
+                            'http://localhost:8000/api/addproperty';
+
+                        int? id =
+                            Provider.of<UserProvider>(context, listen: false)
+                                .userId;
+                        String? username =
+                            Provider.of<UserProvider>(context, listen: false)
+                                .userName;
+                        print("here is the id");
+                        print(id);
+
+                        try {
+                          final response = await http.post(Uri.parse(property),
+                              headers: <String, String>{
+                                'Content-Type': 'application/json',
+                              },
+                              body: jsonEncode({
+                                'propertyName': addproperty.propertyName,
+                                'location': addproperty.propertyLocation,
+                                'description': addproperty.propertyDescription,
+                                'price': addproperty.propertyPrice,
+                                'contact': addproperty.yourContacts,
+                                'userID': id,
+                              }));
+
+                          if (response.statusCode == 200) {
+                            print("property added successfully");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: Colors.green[900],
+                                content: Text('property added successfully!'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          } else {
+                            // Handle other errors
+                            print(
+                                'Failed to add propety. Status code: ${response.statusCode}');
+                          }
+                        } catch (error) {
+                          print('Errooooooooor: $error');
+                        }
                       },
                       child: Text(
                         "Submit",
@@ -234,8 +329,7 @@ class _LandlordState extends State<Landlord> {
                       : Column(
                           // Display list of properties
                           children: yourProperties
-                              .map((property) =>
-                                  PropertyCard(property))
+                              .map((property) => PropertyCard(property))
                               .toList(),
                         ),
                 ],
@@ -247,7 +341,6 @@ class _LandlordState extends State<Landlord> {
     );
   }
 }
-
 
 class PropertyCard extends StatelessWidget {
   final HouseData property;

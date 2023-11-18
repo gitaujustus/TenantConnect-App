@@ -18,8 +18,9 @@ class RegisterData {
   String confirmPassword = '';
 }
 
+String? selectedRole;
+
 class _RegisterState extends State<Register> {
-  String? selectedRole;
   final RegisterData registerData = RegisterData();
   @override
   Widget build(BuildContext context) {
@@ -71,10 +72,10 @@ class _RegisterState extends State<Register> {
                   value: selectedRole,
                   items: [
                     DropdownMenuItem(
-                      value: "LandLord",
+                      value: "LANDLORD",
                       child: const Text("Landlord"),
                     ),
-                    DropdownMenuItem(value: "Tenants", child: Text("Tenants"))
+                    DropdownMenuItem(value: "TENANT", child: Text("Tenants"))
                   ],
                   onChanged: (value) {
                     setState(() => {selectedRole = value});
@@ -123,19 +124,53 @@ class _RegisterState extends State<Register> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    print('Full Name: ${registerData.fullName}');
-                    print('Email: ${registerData.email}');
-                    print('Role: ${registerData.role}');
-                    print('Password: ${registerData.password}');
-                    print('Confirm Password: ${registerData.confirmPassword}');
-
+                    print(selectedRole);
+                    if (registerData.password != registerData.confirmPassword) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Password must be the same'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      return;
+                    }
                     final String register =
-                        'http://192.168.137.1:8000/register';
+                        'http://localhost:8000/api/register';
                     try {
-                      final response = await http.post(Uri.parse(register),
-                          body: jsonEncode({}));
+                      final response = await http.post(
+                        Uri.parse(register),
+                        headers: <String, String>{
+                          'Content-Type': 'application/json',
+                        },
+                        body: jsonEncode({
+                          'fullname': registerData.fullName,
+                          'email': registerData.email,
+                          'role': selectedRole,
+                          'password': registerData.password,
+                          'userID': 2,
+                        }),
+                      );
+
+                      if (response.statusCode == 200) {
+                        // Registration successful
+                        print('Registration successful: ${response.body}');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Account created successfully!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        // Navigate to login screen
+                        Navigator.pushNamed(context, '/');
+                      } else {
+                        // Handle other errors
+                        print(
+                            'Failed to register. Status code: ${response.statusCode}');
+                        print('Responseeeeee: ${response.body}');
+                      }
                     } catch (e) {
-                      print(e);
+                      // Handle exceptions
+                      print('Error: $e');
                     }
                   },
                   child: Text(
@@ -143,8 +178,10 @@ class _RegisterState extends State<Register> {
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all<Color>(
-                          Color.fromARGB(255, 127, 127, 242))),
+                    backgroundColor: MaterialStateProperty.all<Color>(
+                      Color.fromARGB(255, 127, 127, 242),
+                    ),
+                  ),
                 )
               ],
             ),

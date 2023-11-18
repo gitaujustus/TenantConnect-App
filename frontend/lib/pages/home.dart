@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:tenantconnect/userprovider.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -14,6 +16,17 @@ class LoginDetails {
   String username = "";
   String password = "";
 }
+
+// class UserProvider extends ChangeNotifier {
+//   String? userEmail;
+//   String? role;
+
+//   void setUser(String email, String userRole) {
+//     userEmail = email;
+//     role = userRole;
+//     notifyListeners();
+//   }
+// }
 
 class _MyHomePageState extends State<MyHomePage> {
   final LoginDetails loginDetails = new LoginDetails();
@@ -84,18 +97,18 @@ class _MyHomePageState extends State<MyHomePage> {
                         SizedBox(
                           height: 20,
                         ),
-
                         ElevatedButton(
                           onPressed: () async {
-                            print("hello there");
+                            print("Clicked");
                             // Construct the URL
-                            final String apiUrl = 'http://192.168.137.1:8000/login';
+                            final String apiUrl =
+                                'http://localhost:8000/api/login';
 
                             try {
                               // Send a POST request to the endpoint with the message "Hello"
                               final response = await http.post(
                                 Uri.parse(apiUrl),
-                                     headers: <String, String>{
+                                headers: <String, String>{
                                   'Content-Type': 'application/json',
                                 },
                                 body: jsonEncode({
@@ -106,8 +119,42 @@ class _MyHomePageState extends State<MyHomePage> {
 
                               if (response.statusCode == 200) {
                                 // Successful request
-                                print('Response: ${response.body}');
+                                print("Successful request");
+                                Map<String, dynamic> responseData =
+                                    json.decode(response.body);
+                                String email = responseData['userEmail'];
+                                String fullname = responseData['fullname'];
+                                String role = responseData['role'];
+                                int id = responseData['id'];
+                                print(responseData['id']);
+
+                                // Access UserProvider and update user data
+                                UserProvider userProvider =
+                                    Provider.of<UserProvider>(context,
+                                        listen: false);
+                                userProvider.setUser(fullname, email, role, id);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Login successful'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                                if (role == 'TENANT') {
+                                  print("He is a tenant");
+                                  Navigator.pushNamed(context, '/tenants');
+                                } else if (role == 'LANDLORD') {
+                                  print("He is a landlord");
+                                  Navigator.pushNamed(context, '/landlord');
+                                }
                               } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Invalid login. Please check your credentials.',
+                                      style: TextStyle(color: Colors.redAccent),
+                                    ),
+                                  ),
+                                );
                                 // Handle error
                                 print(
                                     'Failed to send request. Status code: ${response.statusCode}');
@@ -128,32 +175,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                           ),
                         )
-
-//                        ElevatedButton(
-//   onPressed: () async {
-//     // Assuming you've validated the username and password locally
-//     if (loginDetails.username == "tenant") {
-//       // Navigate to Tenants page
-//       Navigator.pushNamed(context, '/tenants');
-//     } else if (loginDetails.username == "landlord") {
-//       // Navigate to Landlords page
-//       Navigator.pushNamed(context, '/landlord');
-//     } else {
-//       // Handle other cases or show an error message
-//       print('Invalid username');
-//     }
-//   },
-//   child: Text(
-//     'Login',
-//     style: TextStyle(color: Colors.white),
-//   ),
-//   style: ButtonStyle(
-//     backgroundColor: MaterialStateProperty.all<Color>(
-//       Color.fromARGB(255, 127, 127, 242),
-//     ),
-//   ),
-// )
-
                       ],
                     ))),
                 SizedBox(

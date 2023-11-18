@@ -1,11 +1,19 @@
+// import 'dart:js';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tenantconnect/pages/Tenants.dart';
 import 'package:tenantconnect/pages/home.dart';
 import 'package:tenantconnect/pages/landlord.dart';
 import 'package:tenantconnect/pages/register.dart';
+import 'package:tenantconnect/userprovider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+    create: (context)=>UserProvider(),
+    child: const MyApp(),
+    )
+  );
 }
 
 class MyApp extends StatelessWidget {
