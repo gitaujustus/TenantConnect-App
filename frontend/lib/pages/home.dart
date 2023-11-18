@@ -198,7 +198,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Text(
                       'Tenants',
                       style: TextStyle(
-                          color: Colors.blue,
+                          color: const Color.fromARGB(255, 252, 238, 243),
+                          // color: Colors.blue,
                           decoration: TextDecoration.underline),
                     )),
                 TextButton(
@@ -208,7 +209,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Text(
                       'Landlord',
                       style: TextStyle(
-                          color: Colors.blue,
+                          color: const Color.fromARGB(255, 252, 238, 243),
                           decoration: TextDecoration.underline),
                     )),
               ],
